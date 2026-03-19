@@ -80,20 +80,24 @@ native struct SqliteStmt as ref =>
     _db: long
 
     # Bind a string value to the given 1-based parameter index
-    @alias "sn_sqlite_stmt_bind_string"
-    native fn bindString(index: int, value: str): void
+    fn bindString(index: int, value: str): SqliteStmt =>
+        sn_sqlite_stmt_bind_string(self, index, value)
+        return self
 
     # Bind an integer value to the given 1-based parameter index
-    @alias "sn_sqlite_stmt_bind_int"
-    native fn bindInt(index: int, value: int): void
+    fn bindInt(index: int, value: int): SqliteStmt =>
+        sn_sqlite_stmt_bind_int(self, index, value)
+        return self
 
     # Bind a float value to the given 1-based parameter index
-    @alias "sn_sqlite_stmt_bind_float"
-    native fn bindFloat(index: int, value: double): void
+    fn bindFloat(index: int, value: double): SqliteStmt =>
+        sn_sqlite_stmt_bind_float(self, index, value)
+        return self
 
     # Bind SQL NULL to the given 1-based parameter index
-    @alias "sn_sqlite_stmt_bind_null"
-    native fn bindNull(index: int): void
+    fn bindNull(index: int): SqliteStmt =>
+        sn_sqlite_stmt_bind_null(self, index)
+        return self
 
     # Execute statement with no results (INSERT, UPDATE, DELETE)
     @alias "sn_sqlite_stmt_exec"
@@ -160,3 +164,7 @@ native fn sn_sqlite_db_open(path: str): SqliteDb
 native fn sn_sqlite_db_query(db: SqliteDb, sql: str): SqliteRow[]
 native fn sn_sqlite_db_prepare(db: SqliteDb, sql: str): SqliteStmt
 native fn sn_sqlite_stmt_query(stmt: SqliteStmt): SqliteRow[]
+native fn sn_sqlite_stmt_bind_string(stmt: SqliteStmt, index: int, value: str): void
+native fn sn_sqlite_stmt_bind_int(stmt: SqliteStmt, index: int, value: int): void
+native fn sn_sqlite_stmt_bind_float(stmt: SqliteStmt, index: int, value: double): void
+native fn sn_sqlite_stmt_bind_null(stmt: SqliteStmt, index: int): void

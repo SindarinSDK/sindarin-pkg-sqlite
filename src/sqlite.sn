@@ -5,12 +5,13 @@
 # Usage:
 #   import "sindarin-pkg-sqlite/src/sqlite"
 #
-#   var db: SqliteDb = SqliteDb.open(":memory:")
+#   var db: SqliteDb = SqliteDb.open("mydb.sqlite")
+#
 #   db.exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
 #   db.exec("INSERT INTO users (name, age) VALUES ('Alice', 30)")
 #
-#   var rows: SqliteRow[] = db.query("SELECT * FROM users")
-#   for i: int = 0; i < rows.length(); i += 1 =>
+#   var rows: SqliteRow[] = db.query("SELECT * FROM users ORDER BY id")
+#   for i: int = 0; i < rows.length; i += 1 =>
 #       print(rows[i].getString("name"))
 #       print(rows[i].getInt("age"))
 #
@@ -18,6 +19,32 @@
 #   stmt.bindString(1, "Bob").bindInt(2, 25).exec()
 #   stmt.dispose()
 #   db.dispose()
+#
+# Methods:
+#   SqliteDb.open(path)                           Open a database file (":memory:" for in-memory)
+#   SqliteDb.openMemory()                         Open an in-memory database
+#   db.exec(sql)                                  Execute SQL with no results
+#   db.query(sql): SqliteRow[]                    Execute SELECT, return rows
+#   db.prepare(sql): SqliteStmt                   Create a prepared statement
+#   db.lastInsertId(): int                        Row ID of the last INSERT
+#   db.changes(): int                             Number of rows modified by last INSERT/UPDATE/DELETE
+#   db.dispose()                                  Close the database connection
+#
+#   row.getString(col): str                       Column value as string ("" for SQL NULL)
+#   row.getInt(col): int                          Column value as integer (0 for SQL NULL)
+#   row.getFloat(col): double                     Column value as float (0.0 for SQL NULL)
+#   row.isNull(col): bool                         True if column is SQL NULL
+#   row.columnCount(): int                        Number of columns in this row
+#   row.columnName(index): str                    Column name at zero-based index
+#
+#   stmt.bindString(index, value): SqliteStmt     Bind string to ? parameter (1-based)
+#   stmt.bindInt(index, value): SqliteStmt        Bind integer to ? parameter (1-based)
+#   stmt.bindFloat(index, value): SqliteStmt      Bind float to ? parameter (1-based)
+#   stmt.bindNull(index): SqliteStmt              Bind SQL NULL to ? parameter (1-based)
+#   stmt.exec()                                   Execute with no results
+#   stmt.query(): SqliteRow[]                     Execute and return rows
+#   stmt.reset()                                  Clear all bindings for re-use
+#   stmt.dispose()                                Free statement resources
 #
 # ==============================================================================
 

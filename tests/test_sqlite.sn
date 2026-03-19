@@ -1,0 +1,122 @@
+import "../src/sqlite"
+
+fn main(): void =>
+    var db: SqliteDb = SqliteDb.openMemory()
+
+    # Test 1: CREATE TABLE
+    db.exec("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER, score REAL, notes TEXT)")
+    print("PASS: CREATE TABLE\n")
+
+    # Test 2: INSERT rows
+    db.exec("INSERT INTO users (name, age, score, notes) VALUES ('Alice', 30, 9.5, 'first')")
+    db.exec("INSERT INTO users (name, age, score, notes) VALUES ('Bob', 25, 7.2, NULL)")
+    print("PASS: INSERT\n")
+
+    # Test 3: lastInsertId
+    if db.lastInsertId() != 2 =>
+        print($"FAIL: lastInsertId expected 2, got {db.lastInsertId()}\n")
+        exit(1)
+    print("PASS: lastInsertId\n")
+
+    # Test 4: changes
+    if db.changes() != 1 =>
+        print($"FAIL: changes expected 1, got {db.changes()}\n")
+        exit(1)
+    print("PASS: changes\n")
+
+    # Test 5: query returns correct row count
+    var rows: SqliteRow[] = db.query("SELECT * FROM users ORDER BY id")
+    if rows.length != 2 =>
+        print($"FAIL: expected 2 rows, got {rows.length}\n")
+        exit(1)
+    print("PASS: query row count\n")
+
+    # Test 6: getString
+    if rows[0].getString("name") != "Alice" =>
+        print($"FAIL: expected 'Alice', got '{rows[0].getString(\"name\")}'\n")
+        exit(1)
+    if rows[1].getString("name") != "Bob" =>
+        print($"FAIL: expected 'Bob', got '{rows[1].getString(\"name\")}'\n")
+        exit(1)
+    print("PASS: getString\n")
+
+    # Test 7: getInt
+    if rows[0].getInt("age") != 30 =>
+        print($"FAIL: expected age 30, got {rows[0].getInt(\"age\")}\n")
+        exit(1)
+    print("PASS: getInt\n")
+
+    # Test 8: getFloat
+    if rows[0].getFloat("score") != 9.5 =>
+        print($"FAIL: expected score 9.5, got {rows[0].getFloat(\"score\")}\n")
+        exit(1)
+    print("PASS: getFloat\n")
+
+    # Test 9: NULL detection
+    if rows[0].isNull("notes") =>
+        print("FAIL: Alice.notes should not be NULL\n")
+        exit(1)
+    if !rows[1].isNull("notes") =>
+        print("FAIL: Bob.notes should be NULL\n")
+        exit(1)
+    print("PASS: isNull\n")
+
+    # Test 10: columnCount and columnName
+    if rows[0].columnCount() != 5 =>
+        print($"FAIL: expected 5 columns, got {rows[0].columnCount()}\n")
+        exit(1)
+    if rows[0].columnName(0) != "id" =>
+        print($"FAIL: expected column 0 'id', got '{rows[0].columnName(0)}'\n")
+        exit(1)
+    print("PASS: columnCount / columnName\n")
+
+    # Test 11: prepared statement bind + exec
+    var stmt: SqliteStmt = db.prepare("INSERT INTO users (name, age, score) VALUES (?, ?, ?)")
+    stmt.bindString(1, "Carol")
+    stmt.bindInt(2, 35)
+    stmt.bindFloat(3, 8.1)
+    stmt.exec()
+    stmt.dispose()
+
+    var rows2: SqliteRow[] = db.query("SELECT * FROM users WHERE name = 'Carol'")
+    if rows2.length != 1 =>
+        print($"FAIL: expected 1 Carol row, got {rows2.length}\n")
+        exit(1)
+    if rows2[0].getInt("age") != 35 =>
+        print($"FAIL: expected Carol age 35, got {rows2[0].getInt(\"age\")}\n")
+        exit(1)
+    print("PASS: prepared statement\n")
+
+    # Test 12: prepared statement reset and re-use
+    var insert: SqliteStmt = db.prepare("INSERT INTO users (name, age) VALUES (?, ?)")
+    insert.bindString(1, "Dave")
+    insert.bindInt(2, 40)
+    insert.exec()
+    insert.reset()
+    insert.bindString(1, "Eve")
+    insert.bindInt(2, 28)
+    insert.exec()
+    insert.dispose()
+
+    var rows3: SqliteRow[] = db.query("SELECT COUNT(*) as n FROM users")
+    if rows3[0].getInt("n") != 5 =>
+        print($"FAIL: expected 5 total users, got {rows3[0].getInt(\"n\")}\n")
+        exit(1)
+    print("PASS: prepared statement reuse\n")
+
+    # Test 13: bindNull
+    var insert2: SqliteStmt = db.prepare("INSERT INTO users (name, age, notes) VALUES (?, ?, ?)")
+    insert2.bindString(1, "Frank")
+    insert2.bindInt(2, 50)
+    insert2.bindNull(3)
+    insert2.exec()
+    insert2.dispose()
+
+    var rows4: SqliteRow[] = db.query("SELECT * FROM users WHERE name = 'Frank'")
+    if !rows4[0].isNull("notes") =>
+        print("FAIL: Frank.notes should be NULL after bindNull\n")
+        exit(1)
+    print("PASS: bindNull\n")
+
+    db.dispose()
+    print("PASS\n")

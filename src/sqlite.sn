@@ -1,0 +1,162 @@
+# ==============================================================================
+# sindarin-pkg-sqlite/src/sqlite.sn — SQLite3 database client
+# ==============================================================================
+#
+# Usage:
+#   import "sindarin-pkg-sqlite/src/sqlite"
+#
+#   var db: SqliteDb = SqliteDb.open(":memory:")
+#   db.exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)")
+#   db.exec("INSERT INTO users (name, age) VALUES ('Alice', 30)")
+#
+#   var rows: SqliteRow[] = db.query("SELECT * FROM users")
+#   for i: int = 0; i < rows.length(); i += 1 =>
+#       print(rows[i].getString("name"))
+#       print(rows[i].getInt("age"))
+#
+#   var stmt: SqliteStmt = db.prepare("INSERT INTO users (name, age) VALUES (?, ?)")
+#   stmt.bindString(1, "Bob").bindInt(2, 25).exec()
+#   stmt.dispose()
+#   db.dispose()
+#
+# ==============================================================================
+
+@include <sqlite3.h>
+@link sqlite3
+@source "sqlite.sn.c"
+
+# ==============================================================================
+# SqliteRow — a single query result row
+# ==============================================================================
+
+@alias "RtSqliteRow"
+native struct SqliteRow =>
+    @alias "col_names"
+    _colNames: long
+    @alias "col_values"
+    _colValues: long
+    @alias "col_types"
+    _colTypes: long
+    @alias "col_ints"
+    _colInts: long
+    @alias "col_floats"
+    _colFloats: long
+    @alias "col_count"
+    _colCount: int
+
+    # Get string value for a named column (returns "" for SQL NULL)
+    @alias "sn_sqlite_row_get_string"
+    native fn getString(col: str): str
+
+    # Get integer value for a named column (returns 0 for SQL NULL)
+    @alias "sn_sqlite_row_get_int"
+    native fn getInt(col: str): int
+
+    # Get float value for a named column (returns 0.0 for SQL NULL)
+    @alias "sn_sqlite_row_get_float"
+    native fn getFloat(col: str): double
+
+    # Check if a named column value is SQL NULL
+    @alias "sn_sqlite_row_is_null"
+    native fn isNull(col: str): bool
+
+    # Number of columns in this row
+    @alias "sn_sqlite_row_column_count"
+    native fn columnCount(): int
+
+    # Column name at the given zero-based index
+    @alias "sn_sqlite_row_column_name"
+    native fn columnName(index: int): str
+
+# ==============================================================================
+# SqliteStmt — Prepared statement with parameter binding
+# ==============================================================================
+
+@alias "RtSqliteStmt"
+native struct SqliteStmt as ref =>
+    @alias "stmt_ptr"
+    _stmt: long
+    @alias "db_ptr"
+    _db: long
+
+    # Bind a string value to the given 1-based parameter index
+    @alias "sn_sqlite_stmt_bind_string"
+    native fn bindString(index: int, value: str): void
+
+    # Bind an integer value to the given 1-based parameter index
+    @alias "sn_sqlite_stmt_bind_int"
+    native fn bindInt(index: int, value: int): void
+
+    # Bind a float value to the given 1-based parameter index
+    @alias "sn_sqlite_stmt_bind_float"
+    native fn bindFloat(index: int, value: double): void
+
+    # Bind SQL NULL to the given 1-based parameter index
+    @alias "sn_sqlite_stmt_bind_null"
+    native fn bindNull(index: int): void
+
+    # Execute statement with no results (INSERT, UPDATE, DELETE)
+    @alias "sn_sqlite_stmt_exec"
+    native fn exec(): void
+
+    # Execute and return all result rows
+    fn query(): SqliteRow[] =>
+        return sn_sqlite_stmt_query(self)
+
+    # Reset statement bindings for re-use (clears all bound parameters)
+    @alias "sn_sqlite_stmt_reset"
+    native fn reset(): void
+
+    # Free statement resources
+    @alias "sn_sqlite_stmt_dispose"
+    native fn dispose(): void
+
+# ==============================================================================
+# SqliteDb — Database connection
+# ==============================================================================
+
+@alias "RtSqliteDb"
+native struct SqliteDb as ref =>
+    @alias "db_ptr"
+    _db: long
+
+    # Open a database at the given path (use ":memory:" for in-memory)
+    static fn open(path: str): SqliteDb =>
+        return sn_sqlite_db_open(path)
+
+    # Open an in-memory database
+    static fn openMemory(): SqliteDb =>
+        return sn_sqlite_db_open(":memory:")
+
+    # Execute SQL with no results (CREATE, DROP, INSERT, UPDATE, DELETE)
+    @alias "sn_sqlite_db_exec"
+    native fn exec(sql: str): void
+
+    # Execute a SELECT query and return all rows
+    fn query(sql: str): SqliteRow[] =>
+        return sn_sqlite_db_query(self, sql)
+
+    # Create a prepared statement
+    fn prepare(sql: str): SqliteStmt =>
+        return sn_sqlite_db_prepare(self, sql)
+
+    # Row ID of the last INSERT
+    @alias "sn_sqlite_db_last_insert_id"
+    native fn lastInsertId(): int
+
+    # Number of rows modified by the last INSERT/UPDATE/DELETE
+    @alias "sn_sqlite_db_changes"
+    native fn changes(): int
+
+    # Close the database connection
+    @alias "sn_sqlite_db_dispose"
+    native fn dispose(): void
+
+# ==============================================================================
+# Runtime Function Declarations
+# ==============================================================================
+
+native fn sn_sqlite_db_open(path: str): SqliteDb
+native fn sn_sqlite_db_query(db: SqliteDb, sql: str): SqliteRow[]
+native fn sn_sqlite_db_prepare(db: SqliteDb, sql: str): SqliteStmt
+native fn sn_sqlite_stmt_query(stmt: SqliteStmt): SqliteRow[]

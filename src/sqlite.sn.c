@@ -218,11 +218,7 @@ RtSqliteDb *sn_sqlite_db_open(char *path)
         exit(1);
     }
 
-    RtSqliteDb *d = (RtSqliteDb *)calloc(1, sizeof(RtSqliteDb));
-    if (!d) {
-        fprintf(stderr, "SqliteDb.open: allocation failed\n");
-        exit(1);
-    }
+    RtSqliteDb *d = __sn__SqliteDb__new();
     d->db_ptr = (long long)(uintptr_t)db;
     return d;
 }
@@ -263,11 +259,7 @@ RtSqliteStmt *sn_sqlite_db_prepare(RtSqliteDb *d, char *sql)
     int rc = sqlite3_prepare_v2(DB_PTR(d), sql, -1, &stmt, NULL);
     sqlite_check(rc, DB_PTR(d), "prepare");
 
-    RtSqliteStmt *s = (RtSqliteStmt *)calloc(1, sizeof(RtSqliteStmt));
-    if (!s) {
-        fprintf(stderr, "SqliteDb.prepare: allocation failed\n");
-        exit(1);
-    }
+    RtSqliteStmt *s = __sn__SqliteStmt__new();
     s->stmt_ptr = (long long)(uintptr_t)stmt;
     s->db_ptr   = (long long)(uintptr_t)DB_PTR(d);
     return s;

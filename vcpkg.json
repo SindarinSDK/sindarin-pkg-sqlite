@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "sindarin-sqlite",
+  "version": "1.0.0",
+  "description": "SQLite3 static library for Sindarin",
+  "dependencies": [
+    "sqlite3"
+  ]
+}
